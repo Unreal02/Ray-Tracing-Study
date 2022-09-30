@@ -229,9 +229,8 @@ impl Shape {
 }
 
 fn main() {
-    const SIZE: u32 = 500;
-    const W: u32 = SIZE;
-    const H: u32 = SIZE;
+    const W: u32 = 1280;
+    const H: u32 = 720;
 
     let mut img: RgbImage = ImageBuffer::new(W, H);
 
@@ -333,7 +332,7 @@ fn main() {
     for w in 0..W {
         for h in 0..H {
             let pixel_pos = Vector3::new(
-                (w as f32 + 0.5) / W as f32 - 0.5,
+                (w as f32 + 0.5) / H as f32 - 0.5 * W as f32 / H as f32,
                 -((h as f32 + 0.5) / H as f32 - 0.5),
                 0.0,
             );
