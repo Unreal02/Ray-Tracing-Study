@@ -85,10 +85,14 @@ impl Mat4 {
     }
 
     pub fn determinant(&self) -> f32 {
-        let m0 = Mat3::from_cols(self.y.truncate(0), self.z.truncate(0), self.w.truncate(0));
-        let m1 = Mat3::from_cols(self.x.truncate(0), self.z.truncate(0), self.w.truncate(0));
-        let m2 = Mat3::from_cols(self.x.truncate(0), self.y.truncate(0), self.w.truncate(0));
-        let m3 = Mat3::from_cols(self.x.truncate(0), self.y.truncate(0), self.z.truncate(0));
+        let v0 = self.x.truncate(0);
+        let v1 = self.y.truncate(0);
+        let v2 = self.z.truncate(0);
+        let v3 = self.w.truncate(0);
+        let m0 = Mat3::from_cols(v1, v2, v3);
+        let m1 = Mat3::from_cols(v0, v2, v3);
+        let m2 = Mat3::from_cols(v0, v1, v3);
+        let m3 = Mat3::from_cols(v0, v1, v2);
         self[0][0] * m0.determinant() - self[1][0] * m1.determinant()
             + self[2][0] * m2.determinant()
             - self[3][0] * m3.determinant()
@@ -157,9 +161,10 @@ impl Mul<Mat4> for Mat4 {
         let mut m = Mat4::zero();
         for i in 0..4 {
             for j in 0..4 {
-                for k in 0..4 {
-                    m[j][i] += self[k][i] * rhs[j][k];
-                }
+                m[j][i] = self[0][i] * rhs[j][0]
+                    + self[1][i] * rhs[j][1]
+                    + self[2][i] * rhs[j][2]
+                    + self[3][i] * rhs[j][3];
             }
         }
         m
@@ -170,12 +175,11 @@ impl Mul<Vec4> for Mat4 {
     type Output = Vec4;
 
     fn mul(self, rhs: Vec4) -> Self::Output {
-        let mut v = Vec4::zero();
-        for i in 0..4 {
-            for j in 0..4 {
-                v[i] += self[j][i] * rhs[j];
-            }
-        }
-        v
+        Vec4::new(
+            self[0][0] * rhs[0] + self[1][0] * rhs[1] + self[2][0] * rhs[2] + self[3][0] * rhs[3],
+            self[0][1] * rhs[0] + self[1][1] * rhs[1] + self[2][1] * rhs[2] + self[3][1] * rhs[3],
+            self[0][2] * rhs[0] + self[1][2] * rhs[1] + self[2][2] * rhs[2] + self[3][2] * rhs[3],
+            self[0][3] * rhs[0] + self[1][3] * rhs[1] + self[2][3] * rhs[2] + self[3][3] * rhs[3],
+        )
     }
 }

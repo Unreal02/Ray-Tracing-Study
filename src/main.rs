@@ -11,7 +11,6 @@ use util::vec3::Vec3;
 use crate::shape::*;
 use crate::transform::*;
 use crate::util::quat::Quat;
-use crate::util::vec4::Vec4;
 
 const W: u32 = 1280;
 const H: u32 = 720;
