@@ -15,7 +15,7 @@ use crate::util::quat::Quat;
 
 const W: u32 = 1280;
 const H: u32 = 720;
-const THREAD_COUNT: u32 = 8;
+const THREAD_COUNT: u32 = 16;
 
 #[derive(Clone, Copy)]
 pub struct Material {
