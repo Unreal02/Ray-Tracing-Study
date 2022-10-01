@@ -8,6 +8,7 @@ use std::thread;
 use std::time::Instant;
 use util::mat4::Mat4;
 use util::vec3::Vec3;
+use util::vec4::Vec4;
 
 use crate::shape::*;
 use crate::transform::*;
@@ -18,8 +19,15 @@ const H: u32 = 720;
 const THREAD_COUNT: u32 = 16;
 
 #[derive(Clone, Copy)]
-pub struct Material {
-    color: Rgb<u8>,
+pub enum Material {
+    Simple {
+        color: Rgb<u8>,
+    },
+    Checkerboard {
+        color1: Rgb<u8>,
+        color2: Rgb<u8>,
+        scale: f32,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -79,27 +87,31 @@ fn main() {
 }
 
 fn make_env() -> Shape {
-    let mat_r = Material {
+    let mat_s1 = Material::Simple {
         color: Rgb([255, 0, 0]),
     };
-    let mat_g = Material {
+    let mat_s2 = Material::Simple {
         color: Rgb([0, 255, 0]),
     };
-    let mat_y = Material {
-        color: Rgb([255, 255, 0]),
+    let mat_c1 = Material::Checkerboard {
+        color1: Rgb([255, 255, 0]),
+        color2: Rgb([0, 255, 255]),
+        scale: 0.333333,
     };
-    let mat_w = Material {
-        color: Rgb([255, 255, 255]),
+    let mat_p1 = Material::Checkerboard {
+        color1: Rgb([255, 255, 255]),
+        color2: Rgb([127, 127, 127]),
+        scale: 1.0,
     };
 
-    let s1 = Shape::new(mat_r, Transform::default(), Mesh::Sphere { radius: 1.0 });
+    let s1 = Shape::new(mat_s1, Transform::default(), Mesh::Sphere { radius: 1.0 });
     let s2 = Shape::new(
-        mat_g,
+        mat_s2,
         Transform::from_t(Vec3::new(1.0, 1.0, -1.0)),
         Mesh::Sphere { radius: 0.8 },
     );
     let c1 = Shape::new(
-        mat_y,
+        mat_c1,
         Transform::from_tr(
             Vec3::new(-1.0, -0.5, 0.0),
             Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
@@ -109,12 +121,12 @@ fn make_env() -> Shape {
         },
     );
     let p1 = Shape::new(
-        mat_w,
+        mat_p1,
         Transform::from_t(Vec3::new(0.0, -2.0, 0.0)),
         Mesh::InfinitePlane,
     );
     let env_shapes = Shape::new(
-        Material {
+        Material::Simple {
             color: Rgb([0, 0, 0]),
         },
         Transform::from_trs(
@@ -127,7 +139,7 @@ fn make_env() -> Shape {
         },
     );
     Shape::new(
-        Material {
+        Material::Simple {
             color: Rgb([0, 0, 0]),
         },
         Transform::default(),
@@ -163,11 +175,28 @@ fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {
                 };
                 if let Err(_) = env.intersect(sun_ray) {
                     let intensity = info.normal.angle(to_sun).cos().clamp(0.0, 1.0);
-                    img.put_pixel(
-                        w,
-                        h,
-                        Rgb(info.material.color.0.map(|i| (i as f32 * intensity) as u8)),
-                    );
+                    let color = match info.material {
+                        Material::Simple { color } => color,
+                        Material::Checkerboard {
+                            color1,
+                            color2,
+                            scale,
+                        } => {
+                            let local_pos =
+                                info.local_frame.invert().unwrap() * Vec4::from_vec3(info.pos, 1.0);
+                            if ((local_pos.x / scale).round() as i32
+                                + (local_pos.y / scale).round() as i32
+                                + (local_pos.z / scale).round() as i32)
+                                % 2
+                                == 0
+                            {
+                                color1
+                            } else {
+                                color2
+                            }
+                        }
+                    };
+                    img.put_pixel(w, h, Rgb(color.0.map(|i| (i as f32 * intensity) as u8)));
                 }
             }
         }
