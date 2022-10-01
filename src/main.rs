@@ -4,6 +4,7 @@ mod util;
 
 use image::{ImageBuffer, Rgb, RgbImage};
 use std::f32::consts::PI;
+use std::thread;
 use std::time::Instant;
 use util::mat4::Mat4;
 use util::vec3::Vec3;
@@ -14,6 +15,7 @@ use crate::util::quat::Quat;
 
 const W: u32 = 1280;
 const H: u32 = 720;
+const THREAD_COUNT: u32 = 8;
 
 #[derive(Clone, Copy)]
 pub struct Material {
@@ -36,6 +38,47 @@ pub struct Intersection {
 }
 
 fn main() {
+    if W % THREAD_COUNT as u32 != 0 {
+        panic!("W must be divisible by THREAD_COUNT")
+    }
+
+    let mut img: RgbImage = ImageBuffer::new(W, H);
+    let to_sun = Vec3::new(1.0, 3.0, 2.0);
+    let camera_center = Vec3::new(0.0, 0.0, 1.0);
+
+    println!("size: {} * {}", W, H);
+    let start = Instant::now();
+
+    let mut handles = vec![];
+
+    for i in 0..THREAD_COUNT {
+        handles.push(thread::spawn(move || {
+            render(i, to_sun, camera_center, make_env())
+        }));
+    }
+
+    let mut i = 0;
+    for handle in handles {
+        let part_img = handle.join().unwrap();
+
+        let w_interval = W / THREAD_COUNT;
+        let w_start = i * w_interval;
+        for w in 0..w_interval {
+            for h in 0..H {
+                img.put_pixel(w + w_start, h, *part_img.get_pixel(w, h));
+            }
+        }
+
+        i += 1;
+    }
+
+    img.save("asdf.png").unwrap();
+
+    let duration = start.elapsed();
+    println!("time: {:?}", duration);
+}
+
+fn make_env() -> Shape {
     let mat_r = Material {
         color: Rgb([255, 0, 0]),
     };
@@ -83,7 +126,7 @@ fn main() {
             shapes: vec![s1, s2, c1],
         },
     );
-    let env = Shape::new(
+    Shape::new(
         Material {
             color: Rgb([0, 0, 0]),
         },
@@ -91,23 +134,18 @@ fn main() {
         Mesh::CompositeShape {
             shapes: vec![p1, env_shapes],
         },
-    );
-    // let env = s1;
-
-    render(env);
+    )
 }
 
-fn render(env: Shape) {
-    let mut img: RgbImage = ImageBuffer::new(W, H);
-    let to_sun = Vec3::new(1.0, 3.0, 2.0);
-    let camera_center = Vec3::new(0.0, 0.0, 1.0);
+fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {
+    let mut img: RgbImage = ImageBuffer::new(W / THREAD_COUNT, H);
 
-    println!("size: {} * {}", W, H);
-    let start = Instant::now();
-    for w in 0..W {
+    let w_interval = W / THREAD_COUNT;
+    let w_start = i * w_interval;
+    for w in 0..w_interval {
         for h in 0..H {
             let pixel_pos = Vec3::new(
-                (w as f32 + 0.5) / H as f32 - 0.5 * W as f32 / H as f32,
+                ((w + w_start) as f32 + 0.5) / H as f32 - 0.5 * W as f32 / H as f32,
                 -((h as f32 + 0.5) / H as f32 - 0.5),
                 0.0,
             );
@@ -134,8 +172,6 @@ fn render(env: Shape) {
             }
         }
     }
-    let duration = start.elapsed();
-    println!("time: {:?}", duration);
 
-    img.save("asdf.png").unwrap();
+    img
 }
