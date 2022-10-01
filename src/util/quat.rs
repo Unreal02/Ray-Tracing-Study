@@ -18,7 +18,7 @@ impl Quat {
     }
 
     pub fn from_axis_angle(axis: Vec3, angle: f32) -> Quat {
-        let v = axis * (angle / 2.0).sin();
-        Quat::new(v.x, v.y, v.z, (angle / 2.0).cos())
+        let v = axis * (angle * 0.5).sin();
+        Quat::new(v.x, v.y, v.z, (angle * 0.5).cos())
     }
 }

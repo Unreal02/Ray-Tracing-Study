@@ -72,20 +72,17 @@ impl Shape {
                 }
             }
             Mesh::Cube { size } => {
-                let t1 = (-size.x * 0.5 - ray.pos.x) / ray.dir.x;
-                let t2 = (size.x * 0.5 - ray.pos.x) / ray.dir.x;
-                let t3 = (-size.y * 0.5 - ray.pos.y) / ray.dir.y;
-                let t4 = (size.y * 0.5 - ray.pos.y) / ray.dir.y;
-                let t5 = (-size.z * 0.5 - ray.pos.z) / ray.dir.z;
-                let t6 = (size.z * 0.5 - ray.pos.z) / ray.dir.z;
-                let tmin = vec![t1.min(t2), t3.min(t4), t5.min(t6)]
-                    .iter()
-                    .cloned()
-                    .fold(-1.0 / 0.0 /* -inf */, f32::max);
-                let tmax = vec![t1.max(t2), t3.max(t4), t5.max(t6)]
-                    .iter()
-                    .cloned()
-                    .fold(1.0 / 0.0 /* inf */, f32::min);
+                let inv_x = 1.0 / ray.dir.x;
+                let inv_y = 1.0 / ray.dir.y;
+                let inv_z = 1.0 / ray.dir.z;
+                let t1 = (-size.x * 0.5 - ray.pos.x) * inv_x;
+                let t2 = (size.x * 0.5 - ray.pos.x) * inv_x;
+                let t3 = (-size.y * 0.5 - ray.pos.y) * inv_y;
+                let t4 = (size.y * 0.5 - ray.pos.y) * inv_y;
+                let t5 = (-size.z * 0.5 - ray.pos.z) * inv_z;
+                let t6 = (size.z * 0.5 - ray.pos.z) * inv_z;
+                let tmin = t1.min(t2).max(t3.min(t4)).max(t5.min(t6));
+                let tmax = t1.max(t2).min(t3.max(t4)).min(t5.max(t6));
                 if tmax < 0.0 || tmin > tmax {
                     Err(())
                 } else {

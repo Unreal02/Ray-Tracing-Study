@@ -23,8 +23,8 @@ impl Vec4 {
         Vec4::new(v.x, v.y, v.z, w)
     }
 
-    pub fn dot(lhs: Vec4, rhs: Vec4) -> f32 {
-        lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w
+    pub fn dot(&self, rhs: Vec4) -> f32 {
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z + self.w * rhs.w
     }
 
     pub fn length(&self) -> f32 {
@@ -47,7 +47,7 @@ impl Vec4 {
     }
 
     pub fn angle(lhs: Vec4, rhs: Vec4) -> f32 {
-        (Vec4::dot(lhs, rhs) / lhs.length() / rhs.length()).acos()
+        (lhs.dot(rhs) / lhs.length() / rhs.length()).acos()
     }
 
     pub fn truncate(&self, i: usize) -> Vec3 {
