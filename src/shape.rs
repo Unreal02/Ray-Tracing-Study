@@ -1,12 +1,11 @@
 use std::mem::swap;
 
-use cgmath::{num_traits::Pow, InnerSpace, Matrix4, SquareMatrix, Vector3};
-
 use crate::*;
+use util::vec3::*;
 
 pub enum Mesh {
     Sphere { radius: f32 },
-    Cube { size: Vector3<f32> },
+    Cube { size: Vec3 },
     InfinitePlane,
     CompositeShape { shapes: Vec<Shape> },
 }
@@ -39,10 +38,10 @@ impl Shape {
             Mesh::Sphere { radius } => {
                 let a = ray.dir.dot(ray.dir);
                 let b = 2.0 * ray.dir.dot(ray.pos);
-                let c = ray.pos.dot(ray.pos) - radius.pow(2);
+                let c = ray.pos.dot(ray.pos) - radius.powi(2);
 
                 let (mut t0, mut t1);
-                let d: f32 = b.pow(2) - 4.0 * a * c;
+                let d: f32 = b.powi(2) - 4.0 * a * c;
                 if d < 0.0 {
                     return Err(());
                 } else if d == 0.0 {
@@ -67,18 +66,18 @@ impl Shape {
                         t: t0,
                         pos: intersect_point,
                         normal: intersect_point.normalize(),
-                        local_frame: Matrix4::identity(),
+                        local_frame: Mat4::identity(),
                         material: self.material,
                     })
                 }
             }
             Mesh::Cube { size } => {
-                let t1 = (-size[0] * 0.5 - ray.pos[0]) / ray.dir[0];
-                let t2 = (size[0] * 0.5 - ray.pos[0]) / ray.dir[0];
-                let t3 = (-size[1] * 0.5 - ray.pos[1]) / ray.dir[1];
-                let t4 = (size[1] * 0.5 - ray.pos[1]) / ray.dir[1];
-                let t5 = (-size[2] * 0.5 - ray.pos[2]) / ray.dir[2];
-                let t6 = (size[2] * 0.5 - ray.pos[2]) / ray.dir[2];
+                let t1 = (-size.x * 0.5 - ray.pos.x) / ray.dir.x;
+                let t2 = (size.x * 0.5 - ray.pos.x) / ray.dir.x;
+                let t3 = (-size.y * 0.5 - ray.pos.y) / ray.dir.y;
+                let t4 = (size.y * 0.5 - ray.pos.y) / ray.dir.y;
+                let t5 = (-size.z * 0.5 - ray.pos.z) / ray.dir.z;
+                let t6 = (size.z * 0.5 - ray.pos.z) / ray.dir.z;
                 let tmin = vec![t1.min(t2), t3.min(t4), t5.min(t6)]
                     .iter()
                     .cloned()
@@ -91,17 +90,28 @@ impl Shape {
                     Err(())
                 } else {
                     let pos = ray.pos + tmin * ray.dir;
-                    let normalized_pos = Vector3::new(
-                        pos.x / size.x * 2.0,
-                        pos.y / size.y * 2.0,
-                        pos.z / size.z * 2.0,
-                    )
-                    .map(|i| if i < 0.99999 { 0.0 } else { 1.0 });
+                    let normalized_pos = Vec3::new(
+                        if pos.x / size.x * 2.0 < 0.99999 {
+                            0.0
+                        } else {
+                            1.0
+                        },
+                        if pos.y / size.y * 2.0 < 0.99999 {
+                            0.0
+                        } else {
+                            1.0
+                        },
+                        if pos.z / size.z * 2.0 < 0.99999 {
+                            0.0
+                        } else {
+                            1.0
+                        },
+                    );
                     Ok(Intersection {
                         t: tmin,
                         pos: pos,
                         normal: normalized_pos.normalize(),
-                        local_frame: Matrix4::identity(),
+                        local_frame: Mat4::identity(),
                         material: self.material,
                     })
                 }
@@ -117,8 +127,8 @@ impl Shape {
                     Ok(Intersection {
                         t: intersection_t,
                         pos: ray.pos + intersection_t * ray.dir,
-                        normal: Vector3::new(0.0, if ray.pos.y > 0.0 { 1.0 } else { -1.0 }, 0.0),
-                        local_frame: Matrix4::identity(),
+                        normal: Vec3::new(0.0, if ray.pos.y > 0.0 { 1.0 } else { -1.0 }, 0.0),
+                        local_frame: Mat4::identity(),
                         material: self.material,
                     })
                 }

@@ -1,44 +1,41 @@
-use crate::*;
+use crate::{
+    util::{mat4::Mat4, vec4::Vec4},
+    *,
+};
 
 #[derive(Clone)]
 pub struct Transform {
-    translation: Vector3<f32>,
-    rotation: Quaternion<f32>,
-    scale: Vector3<f32>,
+    translation: Vec3,
+    rotation: Quat,
+    scale: Vec3,
 }
 
 impl Transform {
     pub fn default() -> Transform {
         Transform {
-            translation: Vector3::new(0.0, 0.0, 0.0),
-            rotation: Quaternion {
-                v: Vector3::new(0.0, 0.0, 0.0),
-                s: 1.0,
-            },
-            scale: Vector3::new(1.0, 1.0, 1.0),
+            translation: Vec3::new(0.0, 0.0, 0.0),
+            rotation: Quat::default(),
+            scale: Vec3::new(1.0, 1.0, 1.0),
         }
     }
 
-    pub fn from_t(t: Vector3<f32>) -> Transform {
+    pub fn from_t(t: Vec3) -> Transform {
         Transform {
             translation: t,
-            rotation: Quaternion {
-                v: Vector3::new(0.0, 0.0, 0.0),
-                s: 1.0,
-            },
-            scale: Vector3::new(1.0, 1.0, 1.0),
+            rotation: Quat::default(),
+            scale: Vec3::new(1.0, 1.0, 1.0),
         }
     }
 
-    pub fn from_tr(t: Vector3<f32>, r: Quaternion<f32>) -> Transform {
+    pub fn from_tr(t: Vec3, r: Quat) -> Transform {
         Transform {
             translation: t,
             rotation: r,
-            scale: Vector3::new(1.0, 1.0, 1.0),
+            scale: Vec3::new(1.0, 1.0, 1.0),
         }
     }
 
-    pub fn from_trs(t: Vector3<f32>, r: Quaternion<f32>, s: Vector3<f32>) -> Transform {
+    pub fn from_trs(t: Vec3, r: Quat, s: Vec3) -> Transform {
         Transform {
             translation: t,
             rotation: r,
@@ -46,16 +43,10 @@ impl Transform {
         }
     }
 
-    fn matrix(&self) -> Matrix4<f32> {
-        let mut matrix_t = Matrix4::identity();
-        matrix_t.w.x = self.translation.x;
-        matrix_t.w.y = self.translation.y;
-        matrix_t.w.z = self.translation.z;
-        let matrix_r = Matrix4::from(self.rotation);
-        let mut matrix_s = Matrix4::identity();
-        matrix_s.x.x = self.scale.x;
-        matrix_s.y.y = self.scale.y;
-        matrix_s.z.z = self.scale.z;
+    pub fn matrix(&self) -> Mat4 {
+        let matrix_t = Mat4::from_translation(self.translation);
+        let matrix_r = Mat4::from_quat(self.rotation);
+        let matrix_s = Mat4::from_scale(self.scale);
 
         matrix_t * matrix_r * matrix_s
     }
@@ -64,8 +55,8 @@ impl Transform {
         let m = self.matrix();
         let m_inv = m.invert().unwrap();
         Ray {
-            pos: v4_to_v3(m_inv * v3_to_v4(ray.pos, 1.0)),
-            dir: v4_to_v3(m_inv * v3_to_v4(ray.dir, 0.0)),
+            pos: Vec3::from_vec4(m_inv * Vec4::from_vec3(ray.pos, 1.0)),
+            dir: Vec3::from_vec4(m_inv * Vec4::from_vec3(ray.dir, 0.0)),
         }
     }
 
@@ -73,9 +64,9 @@ impl Transform {
         let m = self.matrix();
         Intersection {
             t: local_intersection.t,
-            pos: v4_to_v3(m * v3_to_v4(local_intersection.pos, 1.0)),
-            normal: v4_to_v3(
-                m.invert().unwrap().transpose() * v3_to_v4(local_intersection.normal, 0.0),
+            pos: Vec3::from_vec4(m * Vec4::from_vec3(local_intersection.pos, 1.0)),
+            normal: Vec3::from_vec4(
+                m.invert().unwrap().transpose() * Vec4::from_vec3(local_intersection.normal, 0.0),
             ),
             local_frame: m * local_intersection.local_frame,
             material: local_intersection.material,
