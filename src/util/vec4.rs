@@ -1,6 +1,6 @@
 use std::ops::{Add, Index, IndexMut, Mul, Sub};
 
-use super::vec3::Vec3;
+use crate::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec4 {

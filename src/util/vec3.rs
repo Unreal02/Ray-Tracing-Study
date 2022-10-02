@@ -1,6 +1,6 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
-use super::vec4::Vec4;
+use crate::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
@@ -32,6 +32,14 @@ impl Vec3 {
 
     pub fn dot(&self, rhs: Vec3) -> f32 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
+    }
+
+    pub fn cross(&self, rhs: Vec3) -> Vec3 {
+        Vec3::new(
+            self.y * rhs.z - self.z * rhs.y,
+            self.z * rhs.x - self.x * rhs.z,
+            self.x * rhs.y - self.y * rhs.x,
+        )
     }
 
     pub fn length(&self) -> f32 {
@@ -94,5 +102,13 @@ impl Mul<Vec3> for f32 {
 
     fn mul(self, rhs: Vec3) -> Self::Output {
         Vec3::new(self * rhs.x, self * rhs.y, self * rhs.z)
+    }
+}
+
+impl Div<f32> for Vec3 {
+    type Output = Vec3;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
     }
 }

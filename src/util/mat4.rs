@@ -1,6 +1,6 @@
 use std::ops::{Index, IndexMut, Mul};
 
-use super::{mat3::Mat3, quat::Quat, vec3::Vec3, vec4::Vec4};
+use crate::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Mat4 {

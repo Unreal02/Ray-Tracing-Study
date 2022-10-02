@@ -1,4 +1,4 @@
-use super::vec3::Vec3;
+use crate::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Quat {

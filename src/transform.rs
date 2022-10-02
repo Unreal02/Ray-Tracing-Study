@@ -1,7 +1,4 @@
-use crate::{
-    util::{mat4::Mat4, vec4::Vec4},
-    *,
-};
+use crate::*;
 
 #[derive(Clone)]
 pub struct Transform {

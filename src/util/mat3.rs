@@ -1,4 +1,4 @@
-use super::vec3::Vec3;
+use crate::*;
 
 pub struct Mat3 {
     x: Vec3,

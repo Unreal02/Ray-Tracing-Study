@@ -1,3 +1,4 @@
+mod obj_reader;
 mod shape;
 mod transform;
 mod util;
@@ -6,19 +7,17 @@ use image::{ImageBuffer, Rgb, RgbImage};
 use std::f32::consts::PI;
 use std::thread;
 use std::time::Instant;
-use util::mat4::Mat4;
-use util::vec3::Vec3;
-use util::vec4::Vec4;
 
-use crate::shape::*;
-use crate::transform::*;
-use crate::util::quat::Quat;
+pub use obj_reader::*;
+pub use shape::*;
+pub use transform::*;
+pub use util::*;
 
 const W: u32 = 1280;
 const H: u32 = 720;
 const THREAD_COUNT: u32 = 16;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Material {
     Simple {
         color: Rgb<u8>,
@@ -36,7 +35,7 @@ pub struct Ray {
     dir: Vec3,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Intersection {
     t: f32,
     pos: Vec3,
@@ -138,7 +137,7 @@ fn make_env() -> Shape {
             shapes: vec![s1, s2, c1],
         },
     );
-    Shape::new(
+    let env = Shape::new(
         Material::Simple {
             color: Rgb([0, 0, 0]),
         },
@@ -146,7 +145,22 @@ fn make_env() -> Shape {
         Mesh::CompositeShape {
             shapes: vec![p1, env_shapes],
         },
-    )
+    );
+
+    let teapot = Shape::new(
+        Material::Simple {
+            color: Rgb([255, 255, 255]),
+        },
+        Transform::from_tr(
+            Vec3::new(0.0, -1.0, -6.0),
+            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
+        ),
+        Mesh::Polygons {
+            obj: read_obj(String::from("teapot")),
+        },
+    );
+
+    teapot
 }
 
 fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {
@@ -167,13 +181,13 @@ fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {
                 dir: (pixel_pos - camera_center).normalize(),
             };
 
-            if let Ok(info) = env.intersect(ray) {
+            if let Some(info) = env.intersect(ray) {
                 let sun_pos = info.pos;
                 let sun_ray = Ray {
                     pos: sun_pos + 0.00001 * to_sun,
                     dir: to_sun,
                 };
-                if let Err(_) = env.intersect(sun_ray) {
+                if let None = env.intersect(sun_ray) {
                     let intensity = info.normal.angle(to_sun).cos().clamp(0.0, 1.0);
                     let color = match info.material {
                         Material::Simple { color } => color,
