@@ -46,17 +46,13 @@ impl Vec3 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
 
-    pub fn normalize(&self) -> Vec3 {
+    pub fn normalize(self) -> Vec3 {
         let len = self.length();
         if len == 0.0 {
             self.clone()
         } else {
             let inv_len = 1.0 / len;
-            Vec3 {
-                x: self.x * inv_len,
-                y: self.y * inv_len,
-                z: self.z * inv_len,
-            }
+            self * inv_len
         }
     }
 

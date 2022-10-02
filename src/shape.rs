@@ -149,57 +149,40 @@ impl Shape {
                         if ray.dir.dot(n) == 0.0 {
                             return cur;
                         }
-                        let dist = (n.x * ray.pos.x + n.y * ray.pos.y + n.z * ray.pos.z
+                        let dist = n.x * ray.pos.x + n.y * ray.pos.y + n.z * ray.pos.z
                             - n.x * p0.x
                             - n.y * p0.y
-                            - n.z * p0.z)
-                            .abs();
+                            - n.z * p0.z;
 
                         let intersection_t = dist / -ray.dir.dot(n);
                         if intersection_t < 0.0 {
                             cur
                         } else {
                             let pos = ray.pos + intersection_t * ray.dir;
-                            let pos_p0 = pos - p0;
-                            let a1 = v1.angle(v2);
-                            let a2 = pos_p0.angle(v1);
-                            let a3 = pos_p0.angle(v2);
-                            if a2 >= a1 || a3 >= a1 {
+
+                            let v01 = p1 - p0;
+                            let v02 = p2 - p0;
+                            let v0p = pos - p0;
+                            if v01.cross(v0p).dot(v0p.cross(v02)) < 0.0 {
                                 return cur;
                             }
-
-                            let v1 = p0 - p1;
-                            let v2 = p2 - p1;
-                            let pos_p0 = pos - p1;
-                            let a1 = v1.angle(v2);
-                            let a2 = pos_p0.angle(v1);
-                            let a3 = pos_p0.angle(v2);
-                            if a2 >= a1 || a3 >= a1 {
+                            let v12 = p2 - p1;
+                            let v10 = p0 - p1;
+                            let v1p = pos - p1;
+                            if v12.cross(v1p).dot(v1p.cross(v10)) < 0.0 {
                                 return cur;
                             }
-
-                            let v1 = p0 - p2;
-                            let v2 = p1 - p2;
-                            let pos_p0 = pos - p2;
-                            let a1 = v1.angle(v2);
-                            let a2 = pos_p0.angle(v1);
-                            let a3 = pos_p0.angle(v2);
-                            if a2 >= a1 || a3 >= a1 {
+                            let v20 = p0 - p2;
+                            let v21 = p1 - p2;
+                            let v2p = pos - p2;
+                            if v20.cross(v2p).dot(v2p.cross(v21)) < 0.0 {
                                 return cur;
                             }
-
-                            let n0 = obj.normals[face[0].1];
-                            let n1 = obj.normals[face[1].1];
-                            let n2 = obj.normals[face[2].1];
-                            let d0 = 1.0 / (pos - p0).length();
-                            let d1 = 1.0 / (pos - p1).length();
-                            let d2 = 1.0 / (pos - p2).length();
-                            // let n = (d0 * n0 + d1 * n1 + d2 * n2).normalize();
 
                             let info = Intersection {
                                 t: intersection_t,
                                 pos,
-                                normal: n,
+                                normal: if dist >= 0.0 { n } else { -1.0 * n },
                                 local_frame: Mat4::identity(),
                                 material: self.material,
                             };

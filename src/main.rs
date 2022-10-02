@@ -102,6 +102,11 @@ fn make_env() -> Shape {
         color2: Rgb([127, 127, 127]),
         scale: 1.0,
     };
+    let mat_p2 = Material::Checkerboard {
+        color1: Rgb([0, 255, 255]),
+        color2: Rgb([0, 127, 127]),
+        scale: 1.0,
+    };
 
     let s1 = Shape::new(mat_s1, Transform::default(), Mesh::Sphere { radius: 1.0 });
     let s2 = Shape::new(
@@ -147,6 +152,14 @@ fn make_env() -> Shape {
         },
     );
 
+    let p2 = Shape::new(
+        mat_p2,
+        Transform::from_tr(
+            Vec3::new(0.0, -1.0, -6.0),
+            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
+        ),
+        Mesh::InfinitePlane,
+    );
     let teapot = Shape::new(
         Material::Simple {
             color: Rgb([255, 255, 255]),
@@ -159,8 +172,17 @@ fn make_env() -> Shape {
             obj: read_obj(String::from("teapot")),
         },
     );
+    let env_teapot = Shape::new(
+        Material::Simple {
+            color: Rgb([0, 0, 0]),
+        },
+        Transform::default(),
+        Mesh::CompositeShape {
+            shapes: vec![teapot, p2],
+        },
+    );
 
-    teapot
+    env_teapot
 }
 
 fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {
