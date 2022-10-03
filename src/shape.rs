@@ -139,27 +139,30 @@ impl Shape {
                         let p2 = obj.points[face[2].0];
                         let v1 = p1 - p0;
                         let v2 = p2 - p0;
-                        let n = v1.cross(v2).normalize();
+                        let polygon_normal = v1.cross(v2).normalize();
 
                         // 평면의 방정식
                         // Ax + By + Cz + D = 0, D = - Ax0 - By0 - Cz0
                         // A, B, C = n
                         // x0, y0, z0 = p0
 
-                        if ray.dir.dot(n) == 0.0 {
+                        if ray.dir.dot(polygon_normal) == 0.0 {
                             return cur;
                         }
-                        let dist = n.x * ray.pos.x + n.y * ray.pos.y + n.z * ray.pos.z
-                            - n.x * p0.x
-                            - n.y * p0.y
-                            - n.z * p0.z;
+                        let dist = polygon_normal.x * ray.pos.x
+                            + polygon_normal.y * ray.pos.y
+                            + polygon_normal.z * ray.pos.z
+                            - polygon_normal.x * p0.x
+                            - polygon_normal.y * p0.y
+                            - polygon_normal.z * p0.z;
 
-                        let intersection_t = dist / -ray.dir.dot(n);
+                        let intersection_t = dist / -ray.dir.dot(polygon_normal);
                         if intersection_t < 0.0 {
                             cur
                         } else {
                             let pos = ray.pos + intersection_t * ray.dir;
 
+                            // pos가 polygon 내부에 있는지 판별
                             let v01 = p1 - p0;
                             let v02 = p2 - p0;
                             let v0p = pos - p0;
@@ -178,6 +181,26 @@ impl Shape {
                             if v20.cross(v2p).dot(v2p.cross(v21)) < 0.0 {
                                 return cur;
                             }
+
+                            let n0 = obj.normals[face[0].1];
+                            let n1 = obj.normals[face[1].1];
+                            let n2 = obj.normals[face[2].1];
+
+                            // p1과 p2에 대해 먼저 interpolate하고 그 점과 p0에 대해 interpolate하기
+                            let n12 = polygon_normal.cross(v12).normalize();
+                            let dist12 = (n12.x * p0.x + n12.y * p0.y + n12.z * p0.z
+                                - n12.x * p1.x
+                                - n12.y * p1.y
+                                - n12.z * p1.z)
+                                .abs();
+                            let t012 = dist12 / v0p.dot(n12).abs();
+                            let pos12 = p0 + t012 * v0p;
+                            let dist1 = (pos12 - p1).length();
+                            let dist2 = (pos12 - p2).length();
+                            let n12 = (n1 * dist2 + n2 * dist1).normalize();
+                            let dist12 = (pos - pos12).length();
+                            let dist0 = (pos - p0).length();
+                            let n = (n0 * dist12 + n12 * dist0).normalize();
 
                             let info = Intersection {
                                 t: intersection_t,

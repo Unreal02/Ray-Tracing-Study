@@ -152,22 +152,12 @@ fn make_env() -> Shape {
         },
     );
 
-    let p2 = Shape::new(
-        mat_p2,
-        Transform::from_tr(
-            Vec3::new(0.0, -1.0, -6.0),
-            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
-        ),
-        Mesh::InfinitePlane,
-    );
+    let p2 = Shape::new(mat_p2, Transform::default(), Mesh::InfinitePlane);
     let teapot = Shape::new(
         Material::Simple {
             color: Rgb([255, 255, 255]),
         },
-        Transform::from_tr(
-            Vec3::new(0.0, -1.0, -6.0),
-            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
-        ),
+        Transform::default(),
         Mesh::Polygons {
             obj: read_obj(String::from("teapot")),
         },
@@ -176,7 +166,10 @@ fn make_env() -> Shape {
         Material::Simple {
             color: Rgb([0, 0, 0]),
         },
-        Transform::default(),
+        Transform::from_tr(
+            Vec3::new(0.0, -0.8, -6.0),
+            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
+        ),
         Mesh::CompositeShape {
             shapes: vec![teapot, p2],
         },
