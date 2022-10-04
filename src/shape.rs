@@ -88,22 +88,23 @@ impl Shape {
                 } else {
                     let pos = ray.pos + tmin * ray.dir;
                     let normalized_pos = Vec3::new(
-                        if pos.x / size.x * 2.0 < 0.99999 {
+                        if (pos.x / size.x).abs() * 2.0 < 0.99999 {
                             0.0
                         } else {
-                            1.0
+                            pos.x
                         },
-                        if pos.y / size.y * 2.0 < 0.99999 {
+                        if (pos.y / size.y).abs() * 2.0 < 0.99999 {
                             0.0
                         } else {
-                            1.0
+                            pos.y
                         },
-                        if pos.z / size.z * 2.0 < 0.99999 {
+                        if (pos.z / size.z).abs() * 2.0 < 0.99999 {
                             0.0
                         } else {
-                            1.0
+                            pos.z
                         },
-                    );
+                    )
+                    .normalize();
                     Some(Intersection {
                         t: tmin,
                         pos: pos,

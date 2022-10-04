@@ -175,7 +175,7 @@ fn make_env() -> Shape {
         },
     );
 
-    env_teapot
+    env
 }
 
 fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {
