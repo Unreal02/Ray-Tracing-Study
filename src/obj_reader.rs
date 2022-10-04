@@ -29,17 +29,17 @@ pub fn read_obj(name: String) -> Object {
                 ));
             }
             "f" => {
-                obj.faces.push(
-                    (1..4)
-                        .map(|i| {
-                            let p: Vec<&str> = split[i].split("/").collect();
-                            (
-                                p[0].parse::<usize>().unwrap() - 1,
-                                p[2].parse::<usize>().unwrap() - 1,
-                            )
-                        })
-                        .collect(),
-                );
+                let mut polygon = Polygon::default();
+                for i in 1..4 {
+                    let p: Vec<&str> = split[i].split("/").collect();
+                    polygon
+                        .points
+                        .push(obj.points[p[0].parse::<usize>().unwrap() - 1]);
+                    polygon
+                        .normals
+                        .push(obj.normals[p[2].parse::<usize>().unwrap() - 1]);
+                }
+                obj.polygons.push(polygon);
             }
             _ => {}
         }

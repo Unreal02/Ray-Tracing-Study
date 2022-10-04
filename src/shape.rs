@@ -132,12 +132,12 @@ impl Shape {
                 }
             }
             Mesh::Polygons { obj } => {
-                obj.faces
+                obj.polygons
                     .iter()
-                    .fold(None, |cur: Option<Intersection>, face| {
-                        let p0 = obj.points[face[0].0];
-                        let p1 = obj.points[face[1].0];
-                        let p2 = obj.points[face[2].0];
+                    .fold(None, |cur: Option<Intersection>, polygon| {
+                        let p0 = polygon.points[0];
+                        let p1 = polygon.points[1];
+                        let p2 = polygon.points[2];
                         let v1 = p1 - p0;
                         let v2 = p2 - p0;
                         let polygon_normal = v1.cross(v2).normalize();
@@ -183,9 +183,9 @@ impl Shape {
                                 return cur;
                             }
 
-                            let n0 = obj.normals[face[0].1];
-                            let n1 = obj.normals[face[1].1];
-                            let n2 = obj.normals[face[2].1];
+                            let n0 = polygon.normals[0];
+                            let n1 = polygon.normals[1];
+                            let n2 = polygon.normals[2];
 
                             // p1과 p2에 대해 먼저 interpolate하고 그 점과 p0에 대해 interpolate하기
                             let n12 = polygon_normal.cross(v12).normalize();

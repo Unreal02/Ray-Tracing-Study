@@ -1,9 +1,15 @@
 use crate::*;
 
+#[derive(Default)]
+pub struct Polygon {
+    pub points: Vec<Vec3>,
+    pub normals: Vec<Vec3>,
+}
+
 pub struct Object {
     pub points: Vec<Vec3>,
     pub normals: Vec<Vec3>,
-    pub faces: Vec<Vec<(usize, usize)>>,
+    pub polygons: Vec<Polygon>,
 }
 
 impl Object {
@@ -11,7 +17,7 @@ impl Object {
         Object {
             points: vec![],
             normals: vec![],
-            faces: vec![],
+            polygons: vec![],
         }
     }
 }

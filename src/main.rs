@@ -1,13 +1,14 @@
+mod make_env;
 mod obj_reader;
 mod shape;
 mod transform;
 mod util;
 
 use image::{ImageBuffer, Rgb, RgbImage};
-use std::f32::consts::PI;
 use std::thread;
 use std::time::Instant;
 
+pub use make_env::*;
 pub use obj_reader::*;
 pub use shape::*;
 pub use transform::*;
@@ -16,18 +17,7 @@ pub use util::*;
 const W: u32 = 1280;
 const H: u32 = 720;
 const THREAD_COUNT: u32 = 16;
-
-#[derive(Clone, Copy, Debug)]
-pub enum Material {
-    Simple {
-        color: Rgb<u8>,
-    },
-    Checkerboard {
-        color1: Rgb<u8>,
-        color2: Rgb<u8>,
-        scale: f32,
-    },
-}
+const ENV_NAME: &str = "teapot";
 
 #[derive(Clone, Copy, Debug)]
 pub struct Ray {
@@ -60,7 +50,7 @@ fn main() {
 
     for i in 0..THREAD_COUNT {
         handles.push(thread::spawn(move || {
-            render(i, to_sun, camera_center, make_env())
+            render(i, to_sun, camera_center, make_env(String::from(ENV_NAME)))
         }));
     }
 
@@ -83,99 +73,6 @@ fn main() {
 
     let duration = start.elapsed();
     println!("time: {:?}", duration);
-}
-
-fn make_env() -> Shape {
-    let mat_s1 = Material::Simple {
-        color: Rgb([255, 0, 0]),
-    };
-    let mat_s2 = Material::Simple {
-        color: Rgb([0, 255, 0]),
-    };
-    let mat_c1 = Material::Checkerboard {
-        color1: Rgb([255, 255, 0]),
-        color2: Rgb([0, 255, 255]),
-        scale: 0.333333,
-    };
-    let mat_p1 = Material::Checkerboard {
-        color1: Rgb([255, 255, 255]),
-        color2: Rgb([127, 127, 127]),
-        scale: 1.0,
-    };
-    let mat_p2 = Material::Checkerboard {
-        color1: Rgb([0, 255, 255]),
-        color2: Rgb([0, 127, 127]),
-        scale: 1.0,
-    };
-
-    let s1 = Shape::new(mat_s1, Transform::default(), Mesh::Sphere { radius: 1.0 });
-    let s2 = Shape::new(
-        mat_s2,
-        Transform::from_t(Vec3::new(1.0, 1.0, -1.0)),
-        Mesh::Sphere { radius: 0.8 },
-    );
-    let c1 = Shape::new(
-        mat_c1,
-        Transform::from_tr(
-            Vec3::new(-1.0, -0.5, 0.0),
-            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
-        ),
-        Mesh::Cube {
-            size: Vec3::new(1.0, 1.0, 1.0),
-        },
-    );
-    let p1 = Shape::new(
-        mat_p1,
-        Transform::from_t(Vec3::new(0.0, -2.0, 0.0)),
-        Mesh::InfinitePlane,
-    );
-    let env_shapes = Shape::new(
-        Material::Simple {
-            color: Rgb([0, 0, 0]),
-        },
-        Transform::from_trs(
-            Vec3::new(0.0, 0.0, -3.0),
-            Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), PI / 4.0),
-            Vec3::new(0.7, 1.0, 1.0),
-        ),
-        Mesh::CompositeShape {
-            shapes: vec![s1, s2, c1],
-        },
-    );
-    let env = Shape::new(
-        Material::Simple {
-            color: Rgb([0, 0, 0]),
-        },
-        Transform::default(),
-        Mesh::CompositeShape {
-            shapes: vec![p1, env_shapes],
-        },
-    );
-
-    let p2 = Shape::new(mat_p2, Transform::default(), Mesh::InfinitePlane);
-    let teapot = Shape::new(
-        Material::Simple {
-            color: Rgb([255, 255, 255]),
-        },
-        Transform::default(),
-        Mesh::Polygons {
-            obj: read_obj(String::from("teapot")),
-        },
-    );
-    let env_teapot = Shape::new(
-        Material::Simple {
-            color: Rgb([0, 0, 0]),
-        },
-        Transform::from_tr(
-            Vec3::new(0.0, -0.8, -6.0),
-            Quat::from_axis_angle(Vec3::new(1.0, 0.0, 0.0), PI / 4.0),
-        ),
-        Mesh::CompositeShape {
-            shapes: vec![teapot, p2],
-        },
-    );
-
-    env
 }
 
 fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Shape) -> RgbImage {

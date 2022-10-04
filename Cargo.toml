@@ -1,5 +1,5 @@
 [package]
-name = "Ray_Tracing_Study"
+name = "ray_tracing_study"
 version = "0.1.0"
 edition = "2021"
 
