@@ -2,7 +2,7 @@ use std::ops::{Add, Div, Mul, Sub};
 
 use crate::*;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,

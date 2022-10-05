@@ -46,11 +46,13 @@ fn main() {
     println!("size: {} * {}", W, H);
     let start = Instant::now();
 
-    let mut handles = vec![];
+    let env = make_env(String::from(ENV_NAME));
 
+    let mut handles = vec![];
     for i in 0..THREAD_COUNT {
+        let env_clone = env.clone();
         handles.push(thread::spawn(move || {
-            render(i, to_sun, camera_center, make_env(String::from(ENV_NAME)))
+            render(i, to_sun, camera_center, env_clone)
         }));
     }
 

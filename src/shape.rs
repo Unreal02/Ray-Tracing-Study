@@ -2,6 +2,7 @@ use std::mem::swap;
 
 use crate::*;
 
+#[derive(Clone)]
 pub enum Mesh {
     Sphere { radius: f32 },
     Cube { size: Vec3 },
@@ -10,6 +11,7 @@ pub enum Mesh {
     CompositeShape { shapes: Vec<Shape> },
 }
 
+#[derive(Clone)]
 pub struct Shape {
     material: Material,
     transform: Transform,
@@ -107,7 +109,7 @@ impl Shape {
                     .normalize();
                     Some(Intersection {
                         t: tmin,
-                        pos: pos,
+                        pos,
                         normal: normalized_pos.normalize(),
                         local_frame: Mat4::identity(),
                         material: self.material,
@@ -132,63 +134,77 @@ impl Shape {
                 }
             }
             Mesh::Polygons { obj } => {
-                obj.polygons
-                    .iter()
-                    .fold(None, |cur: Option<Intersection>, polygon| {
-                        let p0 = polygon.points[0];
-                        let p1 = polygon.points[1];
-                        let p2 = polygon.points[2];
-                        let n0 = polygon.normals[0];
-                        let n1 = polygon.normals[1];
-                        let n2 = polygon.normals[2];
+                let inv_x = 1.0 / ray.dir.x;
+                let inv_y = 1.0 / ray.dir.y;
+                let inv_z = 1.0 / ray.dir.z;
+                let t1 = (obj.bounding_box.0.x - ray.pos.x) * inv_x;
+                let t2 = (obj.bounding_box.1.x - ray.pos.x) * inv_x;
+                let t3 = (obj.bounding_box.0.y - ray.pos.y) * inv_y;
+                let t4 = (obj.bounding_box.1.y - ray.pos.y) * inv_y;
+                let t5 = (obj.bounding_box.0.z - ray.pos.z) * inv_z;
+                let t6 = (obj.bounding_box.1.z - ray.pos.z) * inv_z;
+                let tmin = t1.min(t2).max(t3.min(t4)).max(t5.min(t6));
+                let tmax = t1.max(t2).min(t3.max(t4)).min(t5.max(t6));
+                if tmax < 0.0 || tmin > tmax {
+                    None
+                } else {
+                    obj.polygons
+                        .iter()
+                        .fold(None, |cur: Option<Intersection>, polygon| {
+                            let p0 = polygon.points[0];
+                            let n0 = polygon.normals[0];
+                            let n1 = polygon.normals[1];
+                            let n2 = polygon.normals[2];
 
-                        let e1 = p1 - p0;
-                        let e2 = p2 - p0;
-                        let s = ray.pos - p0;
-                        let p = ray.dir.cross(e2);
-                        let q = s.cross(e1);
+                            let e1 = polygon.e1;
+                            let e2 = polygon.e2;
+                            let s = ray.pos - p0;
+                            let p = ray.dir.cross(e2);
+                            let q = s.cross(e1);
 
-                        let tvw = 1.0 / p.dot(e1) * Vec3::new(q.dot(e2), p.dot(s), q.dot(ray.dir));
-                        let intersection_t = tvw.x;
-                        let w1 = tvw.y;
-                        let w2 = tvw.z;
-                        let w0 = 1.0 - w1 - w2;
+                            let tvw =
+                                1.0 / p.dot(e1) * Vec3::new(q.dot(e2), p.dot(s), q.dot(ray.dir));
+                            let intersection_t = tvw.x;
+                            let w1 = tvw.y;
+                            let w2 = tvw.z;
+                            let w0 = 1.0 - w1 - w2;
 
-                        if intersection_t < 0.0
-                            || w0 < -0.0
-                            || w0 > 1.0
-                            || w1 < -0.0
-                            || w1 > 1.0
-                            || w2 < -0.0
-                            || w2 > 1.0
-                        {
-                            return cur;
-                        }
-
-                        let n = (w0 * n0 + w1 * n1 + w2 * n2).normalize();
-
-                        let info = Intersection {
-                            t: intersection_t,
-                            pos: ray.pos + intersection_t * ray.dir,
-                            normal: if ray.dir.dot(e1.cross(e2)) <= 0.0 {
-                                n
-                            } else {
-                                -1.0 * n
-                            },
-                            local_frame: Mat4::identity(),
-                            material: self.material,
-                        };
-                        match cur {
-                            Some(cur_info) => {
-                                if info.t < cur_info.t {
-                                    Some(info)
-                                } else {
-                                    Some(cur_info)
-                                }
+                            if intersection_t < 0.0
+                                || w0 < -0.0
+                                || w0 > 1.0
+                                || w1 < -0.0
+                                || w1 > 1.0
+                                || w2 < -0.0
+                                || w2 > 1.0
+                            {
+                                return cur;
                             }
-                            None => Some(info),
-                        }
-                    })
+
+                            let n = (w0 * n0 + w1 * n1 + w2 * n2).normalize();
+
+                            let info = Intersection {
+                                t: intersection_t,
+                                pos: ray.pos + intersection_t * ray.dir,
+                                normal: if ray.dir.dot(polygon.polygon_normal) <= 0.0 {
+                                    n
+                                } else {
+                                    -1.0 * n
+                                },
+                                local_frame: Mat4::identity(),
+                                material: self.material,
+                            };
+                            match cur {
+                                Some(cur_info) => {
+                                    if info.t < cur_info.t {
+                                        Some(info)
+                                    } else {
+                                        Some(cur_info)
+                                    }
+                                }
+                                None => Some(info),
+                            }
+                        })
+                }
             }
             Mesh::CompositeShape { shapes } => {
                 shapes

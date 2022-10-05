@@ -10,19 +10,41 @@ pub fn read_obj(name: String) -> Object {
     file.read_to_string(&mut content)
         .expect("something wrong while reading file");
 
+    let mut points: Vec<Vec3> = vec![];
+    let mut normals: Vec<Vec3> = vec![];
+
     let lines = content.split("\n");
     for line in lines {
         let split: Vec<&str> = line.split_whitespace().collect();
         match split[0] {
             "v" => {
-                obj.points.push(Vec3::new(
+                let point = Vec3::new(
                     split[1].parse::<f32>().unwrap(),
                     split[2].parse::<f32>().unwrap(),
                     split[3].parse::<f32>().unwrap(),
-                ));
+                );
+                points.push(point);
+                if obj.bounding_box.0.x > point.x {
+                    obj.bounding_box.0.x = point.x;
+                }
+                if obj.bounding_box.0.y > point.y {
+                    obj.bounding_box.0.y = point.y;
+                }
+                if obj.bounding_box.0.z > point.z {
+                    obj.bounding_box.0.z = point.z;
+                }
+                if obj.bounding_box.1.x < point.x {
+                    obj.bounding_box.1.x = point.x;
+                }
+                if obj.bounding_box.1.y < point.y {
+                    obj.bounding_box.1.y = point.y;
+                }
+                if obj.bounding_box.1.z < point.z {
+                    obj.bounding_box.1.z = point.z;
+                }
             }
             "vn" => {
-                obj.normals.push(Vec3::new(
+                normals.push(Vec3::new(
                     split[1].parse::<f32>().unwrap(),
                     split[2].parse::<f32>().unwrap(),
                     split[3].parse::<f32>().unwrap(),
@@ -34,11 +56,15 @@ pub fn read_obj(name: String) -> Object {
                     let p: Vec<&str> = split[i].split("/").collect();
                     polygon
                         .points
-                        .push(obj.points[p[0].parse::<usize>().unwrap() - 1]);
+                        .push(points[p[0].parse::<usize>().unwrap() - 1]);
                     polygon
                         .normals
-                        .push(obj.normals[p[2].parse::<usize>().unwrap() - 1]);
+                        .push(normals[p[2].parse::<usize>().unwrap() - 1]);
                 }
+
+                polygon.e1 = polygon.points[1] - polygon.points[0];
+                polygon.e2 = polygon.points[2] - polygon.points[0];
+                polygon.polygon_normal = polygon.e1.cross(polygon.e2);
                 obj.polygons.push(polygon);
             }
             _ => {}
