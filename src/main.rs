@@ -5,7 +5,7 @@ mod transform;
 mod util;
 
 use image::{ImageBuffer, Rgb, RgbImage};
-use std::sync::{Arc, RwLock, RwLockReadGuard};
+use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
@@ -48,14 +48,13 @@ fn main() {
     let start = Instant::now();
 
     let env = make_env(String::from(ENV_NAME));
-    let lock = Arc::new(RwLock::new(env));
+    let lock = Arc::new(env);
 
     let mut handles = vec![];
     for i in 0..THREAD_COUNT {
         let clone_lock = Arc::clone(&lock);
         handles.push(thread::spawn(move || {
-            let read = clone_lock.read().unwrap();
-            render(i, to_sun, camera_center, read)
+            render(i, to_sun, camera_center, clone_lock)
         }));
     }
 
@@ -80,7 +79,7 @@ fn main() {
     println!("time: {:?}", duration);
 }
 
-fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: RwLockReadGuard<Shape>) -> RgbImage {
+fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Arc<Shape>) -> RgbImage {
     let mut img: RgbImage = ImageBuffer::new(W / THREAD_COUNT, H);
 
     let w_interval = W / THREAD_COUNT;
