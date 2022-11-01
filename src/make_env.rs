@@ -1,9 +1,14 @@
 use crate::*;
 use std::f32::consts::PI;
 
-pub fn make_env(name: String) -> Shape {
-    match name.as_str() {
-        "env" => {
+pub enum Env {
+    Default,
+    Teapot,
+}
+
+pub fn make_env(name: Env) -> Shape {
+    match name {
+        Env::Default => {
             let mat_s1 = Material::Simple {
                 color: Rgb([255, 0, 0]),
             };
@@ -65,7 +70,7 @@ pub fn make_env(name: String) -> Shape {
                 },
             )
         }
-        "teapot" => {
+        Env::Teapot => {
             let mat_p = Material::Checkerboard {
                 color1: Rgb([0, 255, 255]),
                 color2: Rgb([0, 127, 127]),
@@ -95,9 +100,6 @@ pub fn make_env(name: String) -> Shape {
                     shapes: vec![teapot, p],
                 },
             )
-        }
-        _ => {
-            panic!("no env name")
         }
     }
 }

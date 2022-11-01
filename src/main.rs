@@ -18,7 +18,8 @@ pub use util::*;
 const W: u32 = 1280;
 const H: u32 = 720;
 const THREAD_COUNT: u32 = 16;
-const ENV_NAME: &str = "teapot";
+const CURRENT_ENV: Env = Env::Default;
+const SAMPLE_NUMBER: u32 = 16;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Ray {
@@ -47,7 +48,7 @@ fn main() {
     println!("size: {} * {}", W, H);
     let start = Instant::now();
 
-    let env = make_env(String::from(ENV_NAME));
+    let env = make_env(CURRENT_ENV);
     let lock = Arc::new(env);
 
     let mut handles = vec![];
@@ -86,49 +87,61 @@ fn render(i: u32, to_sun: Vec3, camera_center: Vec3, env: Arc<Shape>) -> RgbImag
     let w_start = i * w_interval;
     for w in 0..w_interval {
         for h in 0..H {
-            let pixel_pos = Vec3::new(
-                ((w + w_start) as f32 + 0.5) / H as f32 - 0.5 * W as f32 / H as f32,
-                -((h as f32 + 0.5) / H as f32 - 0.5),
-                0.0,
-            );
+            let mut color_sum = [0.0, 0.0, 0.0];
+            for _ in 0..SAMPLE_NUMBER {
+                let dx = rand::random::<f32>();
+                let dy = rand::random::<f32>();
+                let pixel_pos = Vec3::new(
+                    ((w + w_start) as f32 + dx) / H as f32 - 0.5 * W as f32 / H as f32,
+                    -((h as f32 + dy) / H as f32 - 0.5),
+                    0.0,
+                );
 
-            let ray = Ray {
-                pos: camera_center,
-                dir: (pixel_pos - camera_center).normalize(),
-            };
-
-            if let Some(info) = env.intersect(ray) {
-                let sun_pos = info.pos;
-                let sun_ray = Ray {
-                    pos: sun_pos + 0.00001 * to_sun,
-                    dir: to_sun,
+                let ray = Ray {
+                    pos: camera_center,
+                    dir: (pixel_pos - camera_center).normalize(),
                 };
-                if let None = env.intersect(sun_ray) {
-                    let intensity = info.normal.angle(to_sun).cos().clamp(0.0, 1.0);
-                    let color = match info.material {
-                        Material::Simple { color } => color,
-                        Material::Checkerboard {
-                            color1,
-                            color2,
-                            scale,
-                        } => {
-                            let local_pos =
-                                info.local_frame.invert().unwrap() * Vec4::from_vec3(info.pos, 1.0);
-                            if ((local_pos.x / scale).round() as i32
-                                + (local_pos.y / scale).round() as i32
-                                + (local_pos.z / scale).round() as i32)
-                                % 2
-                                == 0
-                            {
-                                color1
-                            } else {
-                                color2
-                            }
-                        }
+
+                if let Some(info) = env.intersect(ray) {
+                    let sun_pos = info.pos;
+                    let sun_ray = Ray {
+                        pos: sun_pos + 0.00001 * to_sun,
+                        dir: to_sun,
                     };
-                    img.put_pixel(w, h, Rgb(color.0.map(|i| (i as f32 * intensity) as u8)));
+                    if let None = env.intersect(sun_ray) {
+                        let intensity = info.normal.angle(to_sun).cos().clamp(0.0, 1.0);
+                        let color = match info.material {
+                            Material::Simple { color } => color,
+                            Material::Checkerboard {
+                                color1,
+                                color2,
+                                scale,
+                            } => {
+                                let local_pos = info.local_frame.invert().unwrap()
+                                    * Vec4::from_vec3(info.pos, 1.0);
+                                if ((local_pos.x / scale).round() as i32
+                                    + (local_pos.y / scale).round() as i32
+                                    + (local_pos.z / scale).round() as i32)
+                                    % 2
+                                    == 0
+                                {
+                                    color1
+                                } else {
+                                    color2
+                                }
+                            }
+                        };
+                        for i in 0..3 {
+                            color_sum[i] += color[i] as f32 * intensity;
+                        }
+                    }
                 }
             }
+            img.put_pixel(
+                w,
+                h,
+                Rgb(color_sum.map(|i| (i / SAMPLE_NUMBER as f32) as u8)),
+            );
         }
     }
 
